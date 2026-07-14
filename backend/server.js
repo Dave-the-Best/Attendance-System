@@ -59,16 +59,25 @@ require('dotenv').config();
   const typeDefs = require('./graphql/schema');
   const resolvers = require('./graphql/resolvers');                                                                 
   const { getUserFromToken } = require('./middleware/auth');
-  const initSocket = require('./socket');                                                                           
+  const initSocket = require('./socket');
+  
+  const path = require('path');
+
                                                                                                                     
   const start = async () => {
     await connectDB();                                                                                              
                                                                                                                   
     const app = express();
     app.use(cors({ origin: process.env.CLIENT_ORIGIN, credentials: true }));
-    app.use(express.json());                                                                                        
+    app.use(express.json());
+    
+    app.use(express.static(path.join(__dirname, 'public')));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    });
   
-    app.get('/', (_, res) => res.json({ status: 'API running' }));                                                  
+    app.get('/', (_, res) => res.json({ status: 'API running' }));
+    
                                                                                                                   
     const httpServer = http.createServer(app);
     const io = new Server(httpServer, {
