@@ -71,10 +71,10 @@ require('dotenv').config();
     app.use(cors({ origin: process.env.CLIENT_ORIGIN, credentials: true }));
     app.use(express.json());
     
-    app.use(express.static(path.join(__dirname, 'public')));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(__dirname, 'public', 'index.html'));
-    });
+    //app.use(express.static(path.join(__dirname, 'public')));
+    //app.get('*', (req, res) => {
+      //res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    //});
   
     app.get('/', (_, res) => res.json({ status: 'API running' }));
     
@@ -97,6 +97,11 @@ require('dotenv').config();
     await apollo.start();
     apollo.applyMiddleware({ app, cors: false });
 
+    app.use(express.static(path.join(__dirname, 'public')));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    });
+
     const PORT = process.env.PORT || 5000;                                                                          
     httpServer.listen(PORT, () => {
       console.log(`Server: http://localhost:${PORT}`);                                                              
@@ -104,4 +109,4 @@ require('dotenv').config();
     });
   };                                                                                                                
                                                                                                                   
-  start();
+  start(); 
