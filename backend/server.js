@@ -76,7 +76,7 @@ require('dotenv').config();
       //res.sendFile(path.join(__dirname, 'public', 'index.html'));
     //});
   
-    app.get('/', (_, res) => res.json({ status: 'API running' }));
+    // app.get('/', (_, res) => res.json({ status: 'API running' }));
     
                                                                                                                   
     const httpServer = http.createServer(app);
