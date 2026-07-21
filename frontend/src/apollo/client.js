@@ -1,7 +1,10 @@
 import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 
-const httpLink = createHttpLink({ uri: '/graphql' });
+// const httpLink = createHttpLink({ uri: '/graphql' });
+const httpLink = createHttpLink({
+  uri: 'https://attendance-system-bsqg.onrender.com/graphql',
+});
 
 const authLink = setContext((_, { headers }) => {
   const token = localStorage.getItem('token');
