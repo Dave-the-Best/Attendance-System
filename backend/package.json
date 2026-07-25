@@ -4,7 +4,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "build": "npm install --prefix ../frontend && npm run build --prefix ../frontend && rm -rf public && cp -r ../frontend/dist public"
   },
   "dependencies": {
     "apollo-server-express": "^3.13.0",
@@ -18,8 +19,7 @@
     "socket.io": "^4.7.5"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14",
-    "prisma": "^5.22.0"
+    "nodemon": "^3.1.14"
   },
   "description": "",
   "keywords": [],

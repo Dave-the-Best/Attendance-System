@@ -1,9 +1,12 @@
 import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 
-// const httpLink = createHttpLink({ uri: '/graphql' });
+// In production the frontend is served from the backend (same origin), so a
+// relative /graphql path works. Set VITE_API_URL to point at a separately
+// hosted API. In local dev, Vite proxies /graphql to the backend.
+const API_URL = import.meta.env.VITE_API_URL || '';
 const httpLink = createHttpLink({
-  uri: 'https://attendance-system-bsqg.onrender.com/graphql',
+  uri: `${API_URL}/graphql`,
 });
 
 const authLink = setContext((_, { headers }) => {
