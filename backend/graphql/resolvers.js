@@ -32,12 +32,17 @@ module.exports = {
 
     allLeaves: async (_, __, { user }) => {
       requireAdmin(user);
-      return Leave.find().populate('user reviewedBy').sort({ createdAt: -1 });
+      const leaves = await Leave.find().populate('user reviewedBy').sort({ createdAt: -1 });
+      // Drop orphaned records whose user was deleted — the schema requires a
+      // non-null Leave.user, so a dangling reference would otherwise fail the query.
+      return leaves.filter((l) => l.user);
     },
 
     allAttendance: async (_, __, { user }) => {
       requireAdmin(user);
-      return Attendance.find().populate('user').sort({ date: -1 }).limit(200);
+      const records = await Attendance.find().populate('user').sort({ date: -1 }).limit(200);
+      // Drop orphaned records whose user was deleted (see allLeaves above).
+      return records.filter((r) => r.user);
     },
 
     allEmployees: async (_, __, { user }) => {
