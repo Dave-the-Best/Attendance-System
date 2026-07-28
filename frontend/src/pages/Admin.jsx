@@ -28,7 +28,7 @@ const fmtDate = (d) => (d ? new Date(Number(d) || d).toLocaleDateString() : '—
 
 export default function Admin() {
   const [tab, setTab] = useState('leaves');
-  const { data, refetch, loading } = useQuery(ADMIN_DATA);
+  const { data, refetch, loading, error } = useQuery(ADMIN_DATA);
   const [review] = useMutation(REVIEW);
 
   const act = async (id, status) => {
@@ -41,6 +41,16 @@ export default function Admin() {
   };
 
   if (loading) return <div className="page"><div className="loader">Loading…</div></div>;
+  if (error || !data) return (
+    <div className="page">
+      <div className="page-head"><div><h1>Admin Console</h1></div></div>
+      <div className="card"><div className="empty">
+        {error?.message === 'Admin access required'
+          ? 'You are signed in as an employee. Ask an admin to grant you access (role must be "admin").'
+          : `Could not load admin data: ${error?.message || 'no data returned'}`}
+      </div></div>
+    </div>
+  );
   const { stats, allLeaves, allAttendance, allEmployees } = data;
 
   return (
