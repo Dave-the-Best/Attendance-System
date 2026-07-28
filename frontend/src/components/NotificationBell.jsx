@@ -1,19 +1,32 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Bell, CalendarClock, UserCheck } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { getSocket } from '../socket';
 import { useAuth } from '../context/AuthContext';
-import toast from 'react-hot-toast';
 
 export default function NotificationBell() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    const onDoc = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
 
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
 
     const push = (n) => {
-      setNotifications((prev) => [{ ...n, id: Date.now() + Math.random() }, ...prev].slice(0, 20));
+      setNotifications((prev) =>
+        [{ ...n, id: `${Date.now()}-${Math.random()}`, at: new Date() }, ...prev].slice(0, 20)
+      );
       toast.success(n.message);
     };
 
@@ -35,25 +48,49 @@ export default function NotificationBell() {
   }, [user]);
 
   return (
-    <div className="bell-wrap">
-      <button className="bell-btn" onClick={() => setOpen((o) => !o)}>
-        🔔
+    <div className="bell-wrap" ref={wrapRef}>
+      <button className="icon-btn" onClick={() => setOpen((o) => !o)} aria-label="Notifications">
+        <Bell size={19} />
         {notifications.length > 0 && <span className="bell-badge">{notifications.length}</span>}
       </button>
-      {open && (
-        <div className="bell-dropdown">
-          <div className="bell-header">Notifications</div>
-          {notifications.length === 0 ? (
-            <div className="bell-empty">No notifications yet</div>
-          ) : (
-            notifications.map((n) => (
-              <div key={n.id} className="bell-item">
-                <span className="bell-dot" /> {n.message}
-              </div>
-            ))
-          )}
-        </div>
-      )}
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="bell-dropdown"
+            initial={{ opacity: 0, y: -8, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.97 }}
+            transition={{ duration: 0.16 }}
+          >
+            <div className="bell-header">
+              <span>Notifications</span>
+              {notifications.length > 0 && (
+                <button className="btn btn-ghost btn-sm" onClick={() => setNotifications([])}>
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="bell-scroll">
+              {notifications.length === 0 ? (
+                <div className="bell-empty">You're all caught up 🎉</div>
+              ) : (
+                notifications.map((n) => (
+                  <div key={n.id} className="bell-item">
+                    <div className="bell-ico">
+                      {n.type === 'attendance' ? <UserCheck size={16} /> : <CalendarClock size={16} />}
+                    </div>
+                    <div>
+                      <div className="msg">{n.message}</div>
+                      <div className="time">{n.at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -12,4 +12,18 @@ export default defineConfig({
       '/socket.io': { target: 'http://localhost:5000', ws: true },
     },
   },
+  build: {
+    // Split heavy libraries into their own chunks so the browser can cache them
+    // independently of app code (they rarely change between deploys).
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          charts: ['recharts'],
+          motion: ['framer-motion'],
+          apollo: ['@apollo/client', 'graphql'],
+        },
+      },
+    },
+  },
 });
