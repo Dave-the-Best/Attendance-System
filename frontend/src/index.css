@@ -44,7 +44,7 @@
   --teal:   #0f766e;  --teal-t:   rgba(15, 118, 110, 0.10); --teal-b:   rgba(15, 118, 110, 0.26);
 
   /* --- Semantic surface + text aliases (light) --- */
-  --bg:            var(--n-50);
+  --bg:            #f3f2ed; /* warm editorial page tone */
   --bg-2:          var(--n-100);
   --surface:       var(--n-0);
   --surface-2:     var(--n-50);
@@ -324,7 +324,7 @@ h1, h2, h3, h4 { line-height: 1.25; }
    Page header
    ========================================================================== */
 .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-4); margin-bottom: var(--s-6); flex-wrap: wrap; }
-.page-head h1 { font-size: var(--fs-24); font-weight: var(--fw-bold); letter-spacing: -0.02em; color: var(--text); }
+.page-head h1 { font-family: var(--font-serif); font-size: var(--fs-30); font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
 .page-head .sub { color: var(--muted); font-size: var(--fs-14); margin-top: var(--s-1); }
 .page-head-actions { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
 
@@ -681,6 +681,13 @@ textarea { resize: vertical; min-height: 88px; }
 .tl-social-ico { width: 26px; min-width: 26px; display: grid; place-items: center; }
 .tl-forgot { text-align: center; font-weight: 700; font-size: 16px; color: var(--lg-ink); background: none; border: none; cursor: pointer; margin-top: 8px; }
 .tl-forgot:hover { text-decoration: underline; }
+
+/* register (single editorial column) */
+.tl-form-solo { width: 100%; max-width: 520px; margin: 48px auto 0; display: flex; flex-direction: column; gap: 16px; }
+.tl-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.tl-signin-row { text-align: center; font-size: 15px; color: var(--lg-ink-2); margin-top: 6px; }
+.tl-signin-row a { font-weight: 700; color: var(--lg-ink); cursor: pointer; }
+@media (max-width: 560px) { .tl-row2 { grid-template-columns: 1fr; } }
 
 .tl-footer { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); margin-top: 52px; flex-wrap: wrap; }
 .tl-foot-links { display: flex; align-items: center; gap: 18px; font-size: 15px; font-weight: 500; color: var(--lg-ink); }

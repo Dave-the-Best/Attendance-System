@@ -6,7 +6,8 @@ import {
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import { fmtTime, greeting, isThisWeek, isSameMonth } from '../lib/format';
+import { useLang } from '../context/LanguageContext';
+import { fmtTime, isThisWeek, isSameMonth } from '../lib/format';
 import PageTransition from '../components/ui/PageTransition';
 import StatCard from '../components/ui/StatCard';
 import Card from '../components/ui/Card';
@@ -36,6 +37,9 @@ function ChartTooltip({ active, payload, label }) {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { t } = useLang();
+  const hr = new Date().getHours();
+  const greet = t(hr < 12 ? 'greet.morning' : hr < 18 ? 'greet.afternoon' : 'greet.evening');
   const { data, loading, refetch } = useQuery(DASH, { pollInterval: 30000 });
   const [ci, { loading: ciL }] = useMutation(CHECK_IN);
   const [co, { loading: coL }] = useMutation(CHECK_OUT);
@@ -76,8 +80,8 @@ export default function Dashboard() {
     <PageTransition>
       <div className="page-head">
         <div>
-          <h1>{greeting()}, {user.name.split(' ')[0]} 👋</h1>
-          <p className="muted">{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+          <h1>{greet}, {user.name.split(' ')[0]} 👋</h1>
+          <p className="sub">{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
         </div>
       </div>
 
@@ -131,11 +135,11 @@ export default function Dashboard() {
             </div>
             <motion.button className="btn btn-success full btn-lg" whileTap={{ scale: 0.98 }}
               disabled={ciL || checkedIn} onClick={doCheckIn}>
-              <LogIn size={18} /> {checkedIn ? 'Checked In' : ciL ? 'Please wait…' : 'Check In'}
+              <LogIn size={18} /> {checkedIn ? t('btn.checkedIn') : ciL ? '…' : t('btn.checkin')}
             </motion.button>
             <motion.button className="btn btn-outline full btn-lg" whileTap={{ scale: 0.98 }}
               disabled={coL || !checkedIn || checkedOut} onClick={doCheckOut}>
-              <LogOut size={18} /> {checkedOut ? 'Checked Out' : coL ? 'Please wait…' : 'Check Out'}
+              <LogOut size={18} /> {checkedOut ? t('btn.checkedOut') : coL ? '…' : t('btn.checkout')}
             </motion.button>
           </div>
         </Card>

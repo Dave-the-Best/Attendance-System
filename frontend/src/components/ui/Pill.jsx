@@ -1,6 +1,7 @@
 import {
   Check, X, Clock, Hourglass, CalendarDays, Home, ShieldCheck, User, LogOut, CircleDot,
 } from 'lucide-react';
+import { useLang } from '../../context/LanguageContext';
 
 // Status badge. Conveys status by colour + icon + text label (never colour
 // alone — WCAG). The pill-<status> CSS class supplies the colour treatment.
@@ -16,12 +17,15 @@ const ICONS = {
 };
 
 export default function Pill({ status }) {
+  const { t } = useLang();
   const key = String(status || 'idle').toLowerCase();
   const Icon = ICONS[key] || CircleDot;
+  const translated = t(`status.${key}`);
+  const label = translated === `status.${key}` ? status : translated;
   return (
     <span className={`pill pill-${key}`}>
       <Icon aria-hidden="true" />
-      {status}
+      {label}
     </span>
   );
 }

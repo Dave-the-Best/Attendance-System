@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { CalendarPlus, ListChecks, CalendarDays, Send, Hourglass, CheckCircle2, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fmtDate, daysBetween } from '../lib/format';
+import { useLang } from '../context/LanguageContext';
 import PageTransition from '../components/ui/PageTransition';
 import Card from '../components/ui/Card';
 import Pill from '../components/ui/Pill';
@@ -31,6 +32,7 @@ const TYPES = [
 ];
 
 export default function Leave() {
+  const { t } = useLang();
   const [form, setForm] = useState({ type: 'annual', startDate: '', endDate: '', reason: '' });
   const { data, refetch, loading } = useQuery(MY_LEAVES);
   const [req, { loading: sending }] = useMutation(REQUEST);
@@ -62,8 +64,8 @@ export default function Leave() {
     <PageTransition>
       <div className="page-head">
         <div>
-          <h1>Leave Management</h1>
-          <p className="muted">Request time off and track the status of your applications.</p>
+          <h1>{t('page.leave.title')}</h1>
+          <p className="sub">{t('page.leave.sub')}</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <span className="pill pill-pending"><Hourglass size={12} /> {counts.pending} Pending</span>
@@ -108,8 +110,8 @@ export default function Leave() {
             <label>Reason</label>
             <textarea rows={4} required placeholder="Briefly describe the reason for your leave…" value={form.reason} onChange={set('reason')} />
 
-            <button className="btn btn-primary full btn-lg" disabled={sending} style={{ marginTop: 14 }}>
-              <Send size={17} /> {sending ? 'Submitting…' : 'Submit Request'}
+            <button className="btn btn-primary full btn-lg mt-4" disabled={sending}>
+              <Send size={17} /> {sending ? '…' : t('btn.submitRequest')}
             </button>
           </form>
         </Card>

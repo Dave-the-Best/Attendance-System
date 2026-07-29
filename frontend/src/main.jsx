@@ -6,15 +6,17 @@ import { Toaster } from 'react-hot-toast';
 import client from './apollo/client';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { LanguageProvider } from './context/LanguageContext';
 import App from './App';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <ThemeProvider>
-      <ApolloProvider client={client}>
-        <AuthProvider>
-          <BrowserRouter>
+    <LanguageProvider>
+      <ThemeProvider>
+        <ApolloProvider client={client}>
+          <AuthProvider>
+            <BrowserRouter>
             <Toaster
               position="top-right"
               toastOptions={{
@@ -30,9 +32,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               }}
             />
             <App />
-          </BrowserRouter>
-        </AuthProvider>
-      </ApolloProvider>
-    </ThemeProvider>
+            </BrowserRouter>
+          </AuthProvider>
+        </ApolloProvider>
+      </ThemeProvider>
+    </LanguageProvider>
   </React.StrictMode>
 );

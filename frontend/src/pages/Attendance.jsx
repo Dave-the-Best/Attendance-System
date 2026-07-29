@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { LogIn, LogOut, CalendarCheck, Clock, Timer, AlertTriangle, History } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fmtTime, isSameMonth } from '../lib/format';
+import { useLang } from '../context/LanguageContext';
 import PageTransition from '../components/ui/PageTransition';
 import Card from '../components/ui/Card';
 import StatCard from '../components/ui/StatCard';
@@ -21,6 +22,7 @@ const CHECK_IN = gql`mutation { checkIn { id checkIn status } }`;
 const CHECK_OUT = gql`mutation { checkOut { id checkOut hoursWorked } }`;
 
 export default function Attendance() {
+  const { t } = useLang();
   const { data, refetch, loading } = useQuery(DATA);
   const [ci, { loading: ciL }] = useMutation(CHECK_IN);
   const [co, { loading: coL }] = useMutation(CHECK_OUT);
@@ -71,8 +73,8 @@ export default function Attendance() {
     <PageTransition>
       <div className="page-head">
         <div>
-          <h1>Attendance</h1>
-          <p className="muted">Clock in, clock out, and review your work hours.</p>
+          <h1>{t('page.attendance.title')}</h1>
+          <p className="sub">{t('page.attendance.sub')}</p>
         </div>
       </div>
 
@@ -90,10 +92,10 @@ export default function Attendance() {
         </div>
         <div className="clock-btns">
           <motion.button className="btn btn-success btn-lg" whileTap={{ scale: 0.98 }} disabled={ciL || checkedIn} onClick={doCheckIn}>
-            <LogIn size={18} /> {checkedIn ? 'Checked In' : ciL ? '…' : 'Check In'}
+            <LogIn size={18} /> {checkedIn ? t('btn.checkedIn') : ciL ? '…' : t('btn.checkin')}
           </motion.button>
           <motion.button className="btn btn-danger btn-lg" whileTap={{ scale: 0.98 }} disabled={coL || !checkedIn || checkedOut} onClick={doCheckOut}>
-            <LogOut size={18} /> {checkedOut ? 'Checked Out' : coL ? '…' : 'Check Out'}
+            <LogOut size={18} /> {checkedOut ? t('btn.checkedOut') : coL ? '…' : t('btn.checkout')}
           </motion.button>
         </div>
       </Card>

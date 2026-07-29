@@ -4,10 +4,12 @@ import { Bell, CalendarClock, UserCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getSocket } from '../socket';
 import { useAuth } from '../context/AuthContext';
+import { useLang } from '../context/LanguageContext';
 import { useAppMotion } from '../lib/motion';
 
 export default function NotificationBell() {
   const { user } = useAuth();
+  const { t } = useLang();
   const m = useAppMotion();
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
@@ -50,14 +52,14 @@ export default function NotificationBell() {
         {open && (
           <motion.div className="bell-dropdown" role="menu" {...m.dropdown}>
             <div className="bell-header">
-              <span>Notifications</span>
+              <span>{t('notif.title')}</span>
               {notifications.length > 0 && (
-                <button className="btn btn-ghost btn-sm" onClick={() => setNotifications([])}>Clear</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setNotifications([])}>{t('notif.clear')}</button>
               )}
             </div>
             <div className="bell-scroll">
               {notifications.length === 0 ? (
-                <div className="bell-empty">You're all caught up.</div>
+                <div className="bell-empty">{t('notif.empty')}</div>
               ) : (
                 notifications.map((n) => (
                   <div key={n.id} className="bell-item">

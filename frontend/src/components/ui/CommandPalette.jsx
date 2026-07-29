@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useLang } from '../../context/LanguageContext';
 import { useAppMotion } from '../../lib/motion';
 
 // Cmd+K command palette. Keyboard-first: ↑/↓ to move, ↵ to run, Esc to close.
@@ -15,6 +16,7 @@ export default function CommandPalette({ open, onClose }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { theme, toggle } = useTheme();
+  const { t } = useLang();
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const inputRef = useRef(null);
@@ -22,20 +24,22 @@ export default function CommandPalette({ open, onClose }) {
 
   const commands = useMemo(() => {
     const go = (to) => () => { navigate(to); onClose(); };
+    const nav = t('cmd.navigate');
+    const goto = t('cmd.goto');
     const items = [
-      { id: 'dashboard', label: 'Go to Dashboard', hint: 'Overview', icon: LayoutDashboard, group: 'Navigate', run: go('/dashboard') },
-      { id: 'attendance', label: 'Go to Attendance', hint: 'Clock in / out', icon: Clock, group: 'Navigate', run: go('/attendance') },
-      { id: 'leave', label: 'Go to Leave', hint: 'Time off', icon: CalendarDays, group: 'Navigate', run: go('/leave') },
+      { id: 'dashboard', label: `${goto} ${t('nav.dashboard')}`, hint: nav, icon: LayoutDashboard, group: nav, run: go('/dashboard') },
+      { id: 'attendance', label: `${goto} ${t('nav.attendance')}`, hint: nav, icon: Clock, group: nav, run: go('/attendance') },
+      { id: 'leave', label: `${goto} ${t('nav.leave')}`, hint: nav, icon: CalendarDays, group: nav, run: go('/leave') },
     ];
     if (user?.role === 'admin') {
-      items.push({ id: 'admin', label: 'Go to Admin Console', hint: 'Manage org', icon: ShieldCheck, group: 'Navigate', run: go('/admin') });
+      items.push({ id: 'admin', label: `${goto} ${t('nav.admin')}`, hint: nav, icon: ShieldCheck, group: nav, run: go('/admin') });
     }
     items.push(
-      { id: 'theme', label: theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme', hint: 'Appearance', icon: theme === 'dark' ? Sun : Moon, group: 'Actions', run: () => { toggle(); onClose(); } },
-      { id: 'logout', label: 'Sign out', hint: 'End session', icon: LogOut, group: 'Actions', run: () => { logout(); navigate('/login'); onClose(); } },
+      { id: 'theme', label: theme === 'dark' ? t('cmd.toLight') : t('cmd.toDark'), hint: t('cmd.actions'), icon: theme === 'dark' ? Sun : Moon, group: t('cmd.actions'), run: () => { toggle(); onClose(); } },
+      { id: 'logout', label: t('cmd.signout'), hint: t('cmd.actions'), icon: LogOut, group: t('cmd.actions'), run: () => { logout(); navigate('/login'); onClose(); } },
     );
     return items;
-  }, [user, theme, navigate, onClose, toggle, logout]);
+  }, [user, theme, navigate, onClose, toggle, logout, t]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -68,7 +72,7 @@ export default function CommandPalette({ open, onClose }) {
             <div className="cmdk-input-row">
               <Search size={18} />
               <input
-                ref={inputRef} className="cmdk-input" placeholder="Search commands…"
+                ref={inputRef} className="cmdk-input" placeholder={t('cmd.placeholder')}
                 value={query} onChange={(e) => setQuery(e.target.value)}
                 role="combobox" aria-expanded="true" aria-controls="cmdk-list" aria-autocomplete="list"
               />
@@ -76,7 +80,7 @@ export default function CommandPalette({ open, onClose }) {
             </div>
             <div className="cmdk-list" id="cmdk-list" role="listbox" ref={listRef}>
               {filtered.length === 0 ? (
-                <div className="cmdk-empty">No commands match “{query}”.</div>
+                <div className="cmdk-empty">{t('cmd.empty')} “{query}”.</div>
               ) : (
                 filtered.map((c, i) => {
                   const Icon = c.icon;

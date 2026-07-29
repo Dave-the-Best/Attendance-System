@@ -8,6 +8,7 @@ import {
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import toast from 'react-hot-toast';
 import { fmtTime, fmtDate, initials, downloadCSV } from '../lib/format';
+import { useLang } from '../context/LanguageContext';
 import PageTransition from '../components/ui/PageTransition';
 import Card from '../components/ui/Card';
 import StatCard from '../components/ui/StatCard';
@@ -55,6 +56,7 @@ function ChartTip({ active, payload }) {
 }
 
 export default function Admin() {
+  const { t } = useLang();
   const [tab, setTab] = useState('leaves');
   const [search, setSearch] = useState('');
   const [review, setReview] = useState({ open: false, leave: null, status: 'approved', note: '' });
@@ -129,8 +131,8 @@ export default function Admin() {
     <PageTransition>
       <div className="page-head">
         <div>
-          <h1>Admin Console</h1>
-          <p className="muted">Manage employees, monitor attendance, and review leave requests.</p>
+          <h1>{t('page.admin.title')}</h1>
+          <p className="sub">{t('page.admin.sub')}</p>
         </div>
       </div>
 
@@ -207,10 +209,10 @@ export default function Admin() {
               <input placeholder={`Search ${tab}…`} value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
             {tab === 'employees' && (
-              <button className="btn btn-ghost" onClick={exportEmployees}><Download size={16} /> Export CSV</button>
+              <button className="btn btn-ghost" onClick={exportEmployees}><Download size={16} /> {t('btn.export')}</button>
             )}
             {tab === 'attendance' && (
-              <button className="btn btn-ghost" onClick={exportAttendance}><Download size={16} /> Export CSV</button>
+              <button className="btn btn-ghost" onClick={exportAttendance}><Download size={16} /> {t('btn.export')}</button>
             )}
           </div>
 
@@ -239,10 +241,10 @@ export default function Admin() {
                         {l.status === 'pending' && (
                           <div className="row-actions">
                             <button className="btn btn-success btn-sm" onClick={() => setReview({ open: true, leave: l, status: 'approved', note: '' })}>
-                              <Check size={15} /> Approve
+                              <Check size={15} /> {t('btn.approve')}
                             </button>
                             <button className="btn btn-danger btn-sm" onClick={() => setReview({ open: true, leave: l, status: 'rejected', note: '' })}>
-                              <X size={15} /> Reject
+                              <X size={15} /> {t('btn.reject')}
                             </button>
                           </div>
                         )}
