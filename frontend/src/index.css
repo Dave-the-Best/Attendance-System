@@ -506,6 +506,53 @@ textarea { resize: vertical; min-height: 88px; }
 .auth-card .head p { color: var(--muted); margin-top: var(--s-1-5); font-size: var(--fs-14); }
 .auth-mobile-logo { display: none; align-items: center; gap: var(--s-2-5); font-weight: var(--fw-bold); font-size: var(--fs-16); margin-bottom: var(--s-6); }
 
+/* --- Auth product showcase (image slider) --- */
+.auth-showcase { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; justify-content: center; gap: var(--s-6); min-height: 0; padding: var(--s-8) 0; }
+.showcase-stage { position: relative; height: 300px; }
+.showcase-slide { position: absolute; inset: 0; display: flex; flex-direction: column; gap: var(--s-4); }
+.showcase-caption h3 { font-size: var(--fs-20); font-weight: var(--fw-bold); letter-spacing: -0.02em; color: #f4f6f8; }
+.showcase-caption p { font-size: var(--fs-14); color: rgba(244, 246, 248, 0.68); margin-top: var(--s-1); line-height: 1.55; max-width: 400px; }
+
+/* the "screenshot" frame floating on the dark panel */
+.mock { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--sh-4); overflow: hidden; }
+.mock-chrome { display: flex; align-items: center; gap: var(--s-1-5); padding: var(--s-2-5) var(--s-3); border-bottom: 1px solid var(--border); background: var(--surface-2); }
+.mock-chrome .d { width: 9px; height: 9px; border-radius: var(--r-pill); background: var(--border-2); }
+.mock-chrome .mock-tab { margin-left: var(--s-2); font-size: var(--fs-11); font-weight: var(--fw-semibold); color: var(--muted); }
+.mock-body { padding: var(--s-4); }
+
+/* slide 1 — check-in */
+.mock-clock { font-size: var(--fs-38); font-weight: var(--fw-bold); letter-spacing: -0.03em; color: var(--text); font-variant-numeric: tabular-nums; }
+.mock-clock-sub { font-size: var(--fs-12); color: var(--muted); margin-top: 2px; }
+.mock-session { display: inline-flex; align-items: center; gap: var(--s-1-5); margin-top: var(--s-3); font-size: var(--fs-12); font-weight: var(--fw-semibold); color: var(--green); background: var(--green-t); border: 1px solid var(--green-b); border-radius: var(--r-pill); padding: 3px var(--s-2-5); }
+.mock-session .dot { width: 6px; height: 6px; border-radius: var(--r-pill); background: var(--green); animation: pulse 1.8s ease infinite; }
+.mock-btns { display: flex; gap: var(--s-2); margin-top: var(--s-4); }
+.mock-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: var(--s-1-5); font-size: var(--fs-12); font-weight: var(--fw-semibold); padding: var(--s-2) 0; border-radius: var(--r-sm); }
+.mock-btn.ok { background: var(--green); color: #fff; }
+.mock-btn.ghost { background: var(--surface-2); color: var(--text-2); border: 1px solid var(--border); }
+
+/* slide 2 — register rows */
+.mock-row { display: flex; align-items: center; gap: var(--s-2-5); padding: var(--s-2-5) 0; border-bottom: 1px solid var(--border); }
+.mock-row:last-child { border-bottom: none; }
+.mock-av { width: 28px; height: 28px; min-width: 28px; border-radius: var(--r-pill); background: var(--accent-tint); color: var(--accent); display: grid; place-items: center; font-size: var(--fs-11); font-weight: var(--fw-bold); }
+.mock-name { font-size: var(--fs-13); font-weight: var(--fw-semibold); color: var(--text); line-height: 1.2; }
+.mock-dept { font-size: var(--fs-11); color: var(--muted); }
+.mock-row .pill { margin-left: auto; }
+
+/* slide 3 — analytics */
+.mock-stats { display: flex; gap: var(--s-3); margin-bottom: var(--s-4); }
+.mock-stat { flex: 1; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r); padding: var(--s-2-5) var(--s-3); }
+.mock-stat .k { font-size: var(--fs-11); color: var(--muted); font-weight: var(--fw-medium); }
+.mock-stat .v { font-size: var(--fs-20); font-weight: var(--fw-bold); color: var(--text); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.mock-bars { display: flex; align-items: flex-end; gap: var(--s-2); height: 92px; padding-top: var(--s-2); }
+.mock-bar { flex: 1; background: var(--accent); border-radius: var(--r-sm) var(--r-sm) 0 0; opacity: 0.85; }
+.mock-bar:nth-child(even) { background: var(--accent-400); }
+
+/* dots */
+.showcase-dots { display: flex; gap: var(--s-1-5); }
+.showcase-dot { width: 24px; height: 4px; border-radius: var(--r-pill); background: rgba(244, 246, 248, 0.2); border: none; cursor: pointer; padding: 0; transition: background var(--dur-base) var(--ease-standard); }
+.showcase-dot:hover { background: rgba(244, 246, 248, 0.4); }
+.showcase-dot.on { background: var(--accent-400); }
+
 /* ==========================================================================
    Live clock / check-in
    ========================================================================== */
