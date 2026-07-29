@@ -9,8 +9,8 @@ import PageTransition from '../components/ui/PageTransition';
 import Card from '../components/ui/Card';
 import StatCard from '../components/ui/StatCard';
 import Pill from '../components/ui/Pill';
-import EmptyState from '../components/ui/EmptyState';
 import Loader from '../components/ui/Loader';
+import DataTable from '../components/ui/DataTable';
 
 const DATA = gql`
   query {
@@ -22,7 +22,7 @@ const CHECK_IN = gql`mutation { checkIn { id checkIn status } }`;
 const CHECK_OUT = gql`mutation { checkOut { id checkOut hoursWorked } }`;
 
 export default function Attendance() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { data, refetch, loading } = useQuery(DATA);
   const [ci, { loading: ciL }] = useMutation(CHECK_IN);
   const [co, { loading: coL }] = useMutation(CHECK_OUT);
@@ -30,8 +30,8 @@ export default function Attendance() {
   const [month, setMonth] = useState('all');
 
   useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const today = data?.todayAttendance;
@@ -42,10 +42,9 @@ export default function Attendance() {
   const monthly = useMemo(() => {
     const m = list.filter((a) => isSameMonth(a.date));
     const hours = m.reduce((s, a) => s + (a.hoursWorked || 0), 0);
-    const late = m.filter((a) => a.status === 'late').length;
     return {
       present: m.length,
-      late,
+      late: m.filter((a) => a.status === 'late').length,
       hours: Math.round(hours * 10) / 10,
       avg: m.length ? Math.round((hours / m.length) * 10) / 10 : 0,
     };
@@ -59,13 +58,30 @@ export default function Attendance() {
   const filtered = month === 'all' ? list : list.filter((a) => (a.date || '').startsWith(month));
 
   const doCheckIn = async () => {
-    try { await ci(); await refetch(); toast.success('Checked in'); }
+    try { await ci(); await refetch(); toast.success(t('toast.checkin')); }
     catch (e) { toast.error(e.message); }
   };
   const doCheckOut = async () => {
-    try { await co(); await refetch(); toast.success('Checked out'); }
+    try { await co(); await refetch(); toast.success(t('toast.checkout')); }
     catch (e) { toast.error(e.message); }
   };
+
+  const cols = [
+    { key: 'date', header: t('tbl.date'), sortable: true, render: (r) => <span className="mono">{r.date}</span> },
+    { key: 'checkIn', header: t('tbl.checkin'), render: (r) => <span className="mono">{fmtTime(r.checkIn)}</span> },
+    { key: 'checkOut', header: t('tbl.checkout'), render: (r) => <span className="mono">{fmtTime(r.checkOut)}</span> },
+    { key: 'hoursWorked', header: t('tbl.hours'), sortable: true, sortValue: (r) => r.hoursWorked || 0, render: (r) => <span className="mono">{r.hoursWorked || 0}h</span> },
+    { key: 'status', header: t('tbl.status'), sortable: true, render: (r) => <Pill status={r.status} /> },
+  ];
+
+  const monthFilter = (
+    <select value={month} onChange={(e) => setMonth(e.target.value)} className="w-auto" aria-label={t('common.duration')}>
+      <option value="all">{t('common.allTime')}</option>
+      {months.map((m) => (
+        <option key={m} value={m}>{new Date(`${m}-01`).toLocaleDateString(lang, { month: 'long', year: 'numeric' })}</option>
+      ))}
+    </select>
+  );
 
   if (loading && !data) return <Loader />;
 
@@ -80,14 +96,12 @@ export default function Attendance() {
 
       <Card index={0} className="clock-card">
         <div>
-          <div className="clock-time">{now.toLocaleTimeString()}</div>
-          <div className="clock-date">
-            {now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-          </div>
+          <div className="clock-time">{now.toLocaleTimeString(lang)}</div>
+          <div className="clock-date">{now.toLocaleDateString(lang, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
           <div className="clock-stats">
-            <div className="clock-stat"><div className="k">Check-in</div><div className="v">{fmtTime(today?.checkIn)}</div></div>
-            <div className="clock-stat"><div className="k">Check-out</div><div className="v">{fmtTime(today?.checkOut)}</div></div>
-            <div className="clock-stat"><div className="k">Hours</div><div className="v">{today?.hoursWorked || 0}h</div></div>
+            <div className="clock-stat"><div className="k">{t('clock.checkin')}</div><div className="v">{fmtTime(today?.checkIn)}</div></div>
+            <div className="clock-stat"><div className="k">{t('clock.checkout')}</div><div className="v">{fmtTime(today?.checkOut)}</div></div>
+            <div className="clock-stat"><div className="k">{t('clock.hours')}</div><div className="v">{today?.hoursWorked || 0}h</div></div>
           </div>
         </div>
         <div className="clock-btns">
@@ -100,50 +114,20 @@ export default function Attendance() {
         </div>
       </Card>
 
-      <div className="stat-grid" style={{ marginTop: 22 }}>
-        <StatCard index={0} icon={CalendarCheck} tone="ok" label="Days Present" value={monthly.present} foot="This month" />
-        <StatCard index={1} icon={Timer} tone="brand" label="Total Hours" value={monthly.hours} foot="This month" />
-        <StatCard index={2} icon={Clock} tone="info" label="Avg Hours / Day" value={monthly.avg} foot="This month" />
-        <StatCard index={3} icon={AlertTriangle} tone={monthly.late ? 'warn' : 'ok'} label="Late Arrivals" value={monthly.late} foot="This month" />
+      <div className="stat-grid mt-section">
+        <StatCard index={0} icon={CalendarCheck} tone="ok" label={t('att.stat.daysPresent')} value={monthly.present} foot={t('dash.foot.thisMonth')} />
+        <StatCard index={1} icon={Timer} tone="brand" label={t('att.stat.totalHours')} value={monthly.hours} foot={t('dash.foot.thisMonth')} />
+        <StatCard index={2} icon={Clock} tone="info" label={t('att.stat.avgHours')} value={monthly.avg} foot={t('dash.foot.thisMonth')} />
+        <StatCard index={3} icon={AlertTriangle} tone={monthly.late ? 'warn' : 'ok'} label={t('att.stat.lateArrivals')} value={monthly.late} foot={t('dash.foot.thisMonth')} />
       </div>
 
-      <Card
-        index={1}
-        title="Attendance History"
-        icon={History}
-        action={
-          <select value={month} onChange={(e) => setMonth(e.target.value)} style={{ width: 'auto', minWidth: 150 }}>
-            <option value="all">All time</option>
-            {months.map((m) => (
-              <option key={m} value={m}>
-                {new Date(m + '-01').toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
-              </option>
-            ))}
-          </select>
-        }
-      >
-        {filtered.length === 0 ? (
-          <EmptyState icon={History} title="No records for this period" hint="Try a different month or check in today." />
-        ) : (
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-                <tr><th>Date</th><th>Check-in</th><th>Check-out</th><th>Hours</th><th>Status</th></tr>
-              </thead>
-              <tbody>
-                {filtered.map((a) => (
-                  <tr key={a.id}>
-                    <td className="mono">{a.date}</td>
-                    <td className="mono">{fmtTime(a.checkIn)}</td>
-                    <td className="mono">{fmtTime(a.checkOut)}</td>
-                    <td className="mono">{a.hoursWorked || 0}h</td>
-                    <td><Pill status={a.status} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      <Card index={1} title={t('att.card.history')} icon={History}>
+        <DataTable
+          columns={cols} rows={filtered} rowKey={(r) => r.id}
+          filters={monthFilter}
+          emptyIcon={History} emptyTitle={t('att.empty')}
+          initialSort={{ key: 'date', dir: 'desc' }}
+        />
       </Card>
     </PageTransition>
   );

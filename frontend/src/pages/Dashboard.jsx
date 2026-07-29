@@ -25,16 +25,6 @@ const DASH = gql`
 const CHECK_IN = gql`mutation { checkIn { id checkIn status } }`;
 const CHECK_OUT = gql`mutation { checkOut { id checkOut hoursWorked } }`;
 
-function ChartTooltip({ active, payload, label }) {
-  if (!active || !payload || !payload.length) return null;
-  return (
-    <div style={{ background: 'var(--elevated)', border: '1px solid var(--border)', borderRadius: 10, padding: '9px 12px', boxShadow: 'var(--shadow)', fontSize: 13 }}>
-      <div style={{ color: 'var(--muted)', marginBottom: 2 }}>{label}</div>
-      <div style={{ fontWeight: 700 }}>{payload[0].value}h worked</div>
-    </div>
-  );
-}
-
 export default function Dashboard() {
   const { user } = useAuth();
   const { t } = useLang();
@@ -43,6 +33,16 @@ export default function Dashboard() {
   const { data, loading, refetch } = useQuery(DASH, { pollInterval: 30000 });
   const [ci, { loading: ciL }] = useMutation(CHECK_IN);
   const [co, { loading: coL }] = useMutation(CHECK_OUT);
+
+  function ChartTooltip({ active, payload, label }) {
+    if (!active || !payload || !payload.length) return null;
+    return (
+      <div className="chart-tip">
+        <div className="k">{label}</div>
+        <div className="v">{payload[0].value}h {t('common.worked')}</div>
+      </div>
+    );
+  }
 
   if (loading && !data) return <Loader />;
 
@@ -57,23 +57,19 @@ export default function Dashboard() {
   const weekHours = attendance.filter((a) => isThisWeek(a.date)).reduce((s, a) => s + (a.hoursWorked || 0), 0);
   const monthPresent = attendance.filter((a) => isSameMonth(a.date)).length;
 
-  const chartData = [...attendance]
-    .slice(0, 10)
-    .reverse()
-    .map((a) => ({ day: (a.date || '').slice(5), hours: a.hoursWorked || 0 }));
-
+  const chartData = [...attendance].slice(0, 10).reverse().map((a) => ({ day: (a.date || '').slice(5), hours: a.hoursWorked || 0 }));
   const recent = attendance.slice(0, 6);
 
   const doCheckIn = async () => {
-    try { await ci(); await refetch(); toast.success('Checked in — have a great day!'); }
+    try { await ci(); await refetch(); toast.success(t('toast.checkin')); }
     catch (e) { toast.error(e.message); }
   };
   const doCheckOut = async () => {
-    try { await co(); await refetch(); toast.success('Checked out. See you tomorrow!'); }
+    try { await co(); await refetch(); toast.success(t('toast.checkout')); }
     catch (e) { toast.error(e.message); }
   };
 
-  const statusLabel = checkedIn ? (checkedOut ? 'Completed' : 'Working') : 'Not in';
+  const statusLabel = checkedIn ? (checkedOut ? t('dash.status.completed') : t('dash.status.working')) : t('dash.status.notIn');
   const statusTone = checkedIn ? (checkedOut ? 'ok' : 'warn') : 'idle';
 
   return (
@@ -86,73 +82,74 @@ export default function Dashboard() {
       </div>
 
       <div className="stat-grid">
-        <StatCard index={0} icon={Activity} tone={statusTone} label="Today's Status" value={statusLabel} animate={false}
-          foot={checkedIn ? <><CheckCircle2 size={13} /> Checked in at {fmtTime(today.checkIn)}</> : 'Tap check-in to start'} />
-        <StatCard index={1} icon={Timer} tone="info" label="Hours Today" value={today?.hoursWorked || 0} foot="Logged so far today" />
-        <StatCard index={2} icon={CalendarRange} tone="brand" label="This Week" value={Math.round(weekHours * 10) / 10} foot="Total hours worked" />
-        <StatCard index={3} icon={Hourglass} tone={pending ? 'warn' : 'ok'} label="Pending Leaves" value={pending} foot="Awaiting review" />
-        <StatCard index={4} icon={CheckCircle2} tone="ok" label="Approved Leaves" value={approved} foot="This period" />
-        <StatCard index={5} icon={CalendarRange} tone="info" label="Days Present" value={monthPresent} foot="This month" />
+        <StatCard index={0} icon={Activity} tone={statusTone} label={t('dash.stat.todayStatus')} value={statusLabel} animate={false}
+          foot={checkedIn ? <><CheckCircle2 size={13} /> {t('dash.foot.checkedInAt')} {fmtTime(today.checkIn)}</> : t('dash.foot.tapToStart')} />
+        <StatCard index={1} icon={Timer} tone="info" label={t('dash.stat.hoursToday')} value={today?.hoursWorked || 0} foot={t('dash.foot.loggedToday')} />
+        <StatCard index={2} icon={CalendarRange} tone="brand" label={t('dash.stat.thisWeek')} value={Math.round(weekHours * 10) / 10} foot={t('dash.foot.totalHours')} />
+        <StatCard index={3} icon={Hourglass} tone={pending ? 'warn' : 'ok'} label={t('dash.stat.pendingLeaves')} value={pending} foot={t('dash.foot.awaiting')} />
+        <StatCard index={4} icon={CheckCircle2} tone="ok" label={t('dash.stat.approvedLeaves')} value={approved} foot={t('dash.foot.thisPeriod')} />
+        <StatCard index={5} icon={CalendarRange} tone="info" label={t('dash.stat.daysPresent')} value={monthPresent} foot={t('dash.foot.thisMonth')} />
       </div>
 
       <div className="grid-dash">
-        <Card index={0} title="Attendance Trend" icon={TrendingUp}>
+        <Card index={0} title={t('dash.card.trend')} icon={TrendingUp}>
           {chartData.length === 0 ? (
-            <EmptyState icon={TrendingUp} title="No attendance data yet" hint="Your logged hours will appear here." />
+            <EmptyState icon={TrendingUp} title={t('dash.empty.trend')} hint={t('dash.empty.trendHint')} />
           ) : (
             <div className="chart-box">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="hoursGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#6366f1" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+                      <stop offset="0%" stopColor="#4f46e5" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="#4f46e5" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                   <XAxis dataKey="day" tick={{ fontSize: 12, fill: 'var(--muted)' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 12, fill: 'var(--muted)' }} axisLine={false} tickLine={false} width={40} />
                   <Tooltip content={<ChartTooltip />} />
-                  <Area type="monotone" dataKey="hours" stroke="#6366f1" strokeWidth={2.5} fill="url(#hoursGrad)" />
+                  <Area type="monotone" dataKey="hours" stroke="#4f46e5" strokeWidth={2.5} fill="url(#hoursGrad)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           )}
         </Card>
 
-        <Card index={1} title="Quick Check-In" icon={Timer}>
+        <Card index={1} title={t('dash.card.quickCheck')} icon={Timer}>
           <div className="quick-check">
             <div className="quick-status">
               <div className={`qs-ico ${statusTone === 'ok' ? 'ic-ok' : statusTone === 'warn' ? 'ic-warn' : 'ic-brand'}`}>
-                <Activity size={22} />
+                <Activity size={20} />
               </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 15 }}>{statusLabel}</div>
+                <div className="qs-title">{statusLabel}</div>
                 <div className="small muted">
-                  {checkedIn ? `In ${fmtTime(today.checkIn)}${checkedOut ? ` · Out ${fmtTime(today.checkOut)}` : ''}` : 'You have not checked in today'}
+                  {checkedIn ? `${t('clock.checkin')} ${fmtTime(today.checkIn)}${checkedOut ? ` · ${t('clock.checkout')} ${fmtTime(today.checkOut)}` : ''}` : t('dash.quick.notCheckedIn')}
                 </div>
               </div>
             </div>
-            <motion.button className="btn btn-success full btn-lg" whileTap={{ scale: 0.98 }}
-              disabled={ciL || checkedIn} onClick={doCheckIn}>
+            <motion.button className="btn btn-success full btn-lg" whileTap={{ scale: 0.98 }} disabled={ciL || checkedIn} onClick={doCheckIn}>
               <LogIn size={18} /> {checkedIn ? t('btn.checkedIn') : ciL ? '…' : t('btn.checkin')}
             </motion.button>
-            <motion.button className="btn btn-outline full btn-lg" whileTap={{ scale: 0.98 }}
-              disabled={coL || !checkedIn || checkedOut} onClick={doCheckOut}>
+            <motion.button className="btn btn-outline full btn-lg" whileTap={{ scale: 0.98 }} disabled={coL || !checkedIn || checkedOut} onClick={doCheckOut}>
               <LogOut size={18} /> {checkedOut ? t('btn.checkedOut') : coL ? '…' : t('btn.checkout')}
             </motion.button>
           </div>
         </Card>
       </div>
 
-      <Card index={2} title="Recent Attendance" icon={History} className="" >
+      <Card index={2} title={t('dash.card.recent')} icon={History}>
         {recent.length === 0 ? (
-          <EmptyState icon={History} title="No records yet" hint="Check in to create your first record." />
+          <EmptyState icon={History} title={t('dash.empty.recent')} hint={t('dash.empty.recentHint')} />
         ) : (
           <div className="table-wrap">
             <table className="table">
               <thead>
-                <tr><th>Date</th><th>Check-in</th><th>Check-out</th><th>Hours</th><th>Status</th></tr>
+                <tr>
+                  <th scope="col">{t('tbl.date')}</th><th scope="col">{t('tbl.checkin')}</th>
+                  <th scope="col">{t('tbl.checkout')}</th><th scope="col">{t('tbl.hours')}</th><th scope="col">{t('tbl.status')}</th>
+                </tr>
               </thead>
               <tbody>
                 {recent.map((a) => (

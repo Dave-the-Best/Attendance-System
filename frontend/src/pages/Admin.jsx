@@ -3,12 +3,13 @@ import { gql, useMutation, useQuery } from '@apollo/client';
 import { motion } from 'framer-motion';
 import {
   Users, UserCheck, Hourglass, CheckCircle2, ShieldAlert, PieChart as PieIcon, BarChart3,
-  Search, Download, Check, X, CalendarDays, ClipboardList, Building2,
+  Check, X, CalendarDays, ClipboardList,
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import toast from 'react-hot-toast';
 import { fmtTime, fmtDate, initials, downloadCSV } from '../lib/format';
 import { useLang } from '../context/LanguageContext';
+import { springSoft } from '../lib/motion';
 import PageTransition from '../components/ui/PageTransition';
 import Card from '../components/ui/Card';
 import StatCard from '../components/ui/StatCard';
@@ -16,6 +17,7 @@ import Pill from '../components/ui/Pill';
 import EmptyState from '../components/ui/EmptyState';
 import Loader from '../components/ui/Loader';
 import Modal from '../components/ui/Modal';
+import DataTable from '../components/ui/DataTable';
 
 const ADMIN_DATA = gql`
   query {
@@ -37,23 +39,27 @@ const REVIEW = gql`
   }
 `;
 
-const TABS = [
-  { key: 'leaves', label: 'Leave Requests', icon: ClipboardList },
-  { key: 'attendance', label: 'Attendance', icon: CalendarDays },
-  { key: 'employees', label: 'Employees', icon: Users },
-];
-
-const COLORS = { approved: '#059669', pending: '#d97706', rejected: '#e11d48', present: '#059669', late: '#d97706' };
+const COLORS = { approved: '#15803d', pending: '#b45309', rejected: '#b91c1c', present: '#15803d', late: '#b45309' };
 
 function ChartTip({ active, payload }) {
   if (!active || !payload || !payload.length) return null;
   const p = payload[0];
   return (
-    <div style={{ background: 'var(--elevated)', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 12px', boxShadow: 'var(--shadow)', fontSize: 13 }}>
-      <span style={{ textTransform: 'capitalize' }}>{p.name || p.payload.name}</span>: <b>{p.value}</b>
+    <div className="chart-tip">
+      <span className="capitalize">{p.name || p.payload.name}</span>: <b>{p.value}</b>
     </div>
   );
 }
+
+const UserCell = ({ user }) => (
+  <div className="cell-user">
+    <div className="avatar">{initials(user.name)}</div>
+    <div>
+      <div className="cell-title">{user.name}</div>
+      <div className="muted small">{user.department || '—'}</div>
+    </div>
+  </div>
+);
 
 export default function Admin() {
   const { t } = useLang();
@@ -66,7 +72,7 @@ export default function Admin() {
   const submitReview = async () => {
     try {
       await reviewMut({ variables: { id: review.leave.id, status: review.status, reviewNote: review.note } });
-      toast.success(`Leave ${review.status}`);
+      toast.success(review.status === 'approved' ? t('toast.leaveApproved') : t('toast.leaveRejected'));
       setReview({ open: false, leave: null, status: 'approved', note: '' });
       refetch();
     } catch (e) {
@@ -91,22 +97,57 @@ export default function Admin() {
   }, [allAttendance]);
 
   const q = search.trim().toLowerCase();
-  const fLeaves = (allLeaves || []).filter((l) =>
-    !q || l.user.name.toLowerCase().includes(q) || l.status.includes(q) || l.type.includes(q));
-  const fAtt = (allAttendance || []).filter((a) =>
-    !q || a.user.name.toLowerCase().includes(q) || (a.user.department || '').toLowerCase().includes(q));
-  const fEmp = (allEmployees || []).filter((u) =>
-    !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.department || '').toLowerCase().includes(q));
+  const fLeaves = (allLeaves || []).filter((l) => !q || l.user.name.toLowerCase().includes(q) || l.status.includes(q) || l.type.includes(q));
+  const fAtt = (allAttendance || []).filter((a) => !q || a.user.name.toLowerCase().includes(q) || (a.user.department || '').toLowerCase().includes(q));
+  const fEmp = (allEmployees || []).filter((u) => !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.department || '').toLowerCase().includes(q));
 
-  const exportEmployees = () =>
-    downloadCSV('employees.csv', (allEmployees || []).map((u) => ({
-      name: u.name, email: u.email, role: u.role, department: u.department, position: u.position,
-    })));
-  const exportAttendance = () =>
-    downloadCSV('attendance.csv', (allAttendance || []).map((a) => ({
-      employee: a.user.name, department: a.user.department, date: a.date,
-      checkIn: fmtTime(a.checkIn), checkOut: fmtTime(a.checkOut), hours: a.hoursWorked || 0, status: a.status,
-    })));
+  const exportEmployees = () => downloadCSV('employees.csv', (allEmployees || []).map((u) => ({
+    name: u.name, email: u.email, role: u.role, department: u.department, position: u.position,
+  })));
+  const exportAttendance = () => downloadCSV('attendance.csv', (allAttendance || []).map((a) => ({
+    employee: a.user.name, department: a.user.department, date: a.date,
+    checkIn: fmtTime(a.checkIn), checkOut: fmtTime(a.checkOut), hours: a.hoursWorked || 0, status: a.status,
+  })));
+
+  const TABS = [
+    { key: 'leaves', label: t('admin.tab.leaves'), icon: ClipboardList },
+    { key: 'attendance', label: t('admin.tab.attendance'), icon: CalendarDays },
+    { key: 'employees', label: t('admin.tab.employees'), icon: Users },
+  ];
+
+  const leaveCols = [
+    { key: 'name', header: t('tbl.employee'), sortable: true, sticky: true, sortValue: (r) => r.user.name, render: (r) => <UserCell user={r.user} /> },
+    { key: 'type', header: t('tbl.type'), sortable: true, render: (r) => <Pill status={r.type} /> },
+    { key: 'startDate', header: t('tbl.dates'), sortable: true, render: (r) => <span className="small mono">{fmtDate(r.startDate)} → {fmtDate(r.endDate)}</span> },
+    { key: 'reason', header: t('tbl.reason'), render: (r) => <span className="small cell-reason">{r.reason}</span> },
+    { key: 'status', header: t('tbl.status'), sortable: true, render: (r) => <Pill status={r.status} /> },
+    { key: 'actions', header: '', render: (r) => (r.status === 'pending' ? (
+      <div className="row-actions">
+        <button className="btn btn-success btn-sm" onClick={() => setReview({ open: true, leave: r, status: 'approved', note: '' })}><Check size={14} /> {t('btn.approve')}</button>
+        <button className="btn btn-danger btn-sm" onClick={() => setReview({ open: true, leave: r, status: 'rejected', note: '' })}><X size={14} /> {t('btn.reject')}</button>
+      </div>
+    ) : null) },
+  ];
+
+  const attCols = [
+    { key: 'name', header: t('tbl.employee'), sortable: true, sticky: true, sortValue: (r) => r.user.name, render: (r) => <UserCell user={r.user} /> },
+    { key: 'date', header: t('tbl.date'), sortable: true, render: (r) => <span className="mono">{r.date}</span> },
+    { key: 'checkIn', header: t('tbl.checkin'), render: (r) => <span className="mono">{fmtTime(r.checkIn)}</span> },
+    { key: 'checkOut', header: t('tbl.checkout'), render: (r) => <span className="mono">{fmtTime(r.checkOut)}</span> },
+    { key: 'hoursWorked', header: t('tbl.hours'), sortable: true, sortValue: (r) => r.hoursWorked || 0, render: (r) => <span className="mono">{r.hoursWorked || 0}h</span> },
+    { key: 'status', header: t('tbl.status'), sortable: true, render: (r) => <Pill status={r.status} /> },
+  ];
+
+  const empCols = [
+    { key: 'name', header: t('tbl.name'), sortable: true, sticky: true, render: (r) => (
+      <div className="cell-user"><div className="avatar">{initials(r.name)}</div><span className="cell-title">{r.name}</span></div>
+    ) },
+    { key: 'email', header: t('tbl.email'), render: (r) => <span className="small">{r.email}</span> },
+    { key: 'role', header: t('tbl.role'), sortable: true, render: (r) => <Pill status={r.role} /> },
+    { key: 'department', header: t('tbl.department'), sortable: true, render: (r) => r.department || '—' },
+    { key: 'position', header: t('tbl.position'), render: (r) => r.position || '—' },
+    { key: 'createdAt', header: t('tbl.joined'), sortable: true, sortValue: (r) => Number(r.createdAt) || 0, render: (r) => <span className="mono small">{fmtDate(r.createdAt)}</span> },
+  ];
 
   if (loading && !data) return <Loader />;
 
@@ -114,14 +155,14 @@ export default function Admin() {
     const denied = error?.message === 'Admin access required';
     return (
       <PageTransition>
-        <Card title="Admin Console" icon={ShieldAlert}>
-          <EmptyState
-            icon={ShieldAlert}
-            title={denied ? 'Admin access required' : 'Could not load admin data'}
-            hint={denied
-              ? "You're signed in as an employee. Ask an admin to set your role to \"admin\"."
-              : (error?.message || 'No data was returned.')}
-          />
+        <Card title={t('page.admin.title')} icon={ShieldAlert}>
+          <div className={denied ? 'state-locked' : 'state-danger'}>
+            <EmptyState
+              icon={ShieldAlert}
+              title={denied ? t('admin.denied.title') : t('admin.error.title')}
+              hint={denied ? t('admin.denied.hint') : (error?.message || t('admin.error.hint'))}
+            />
+          </div>
         </Card>
       </PageTransition>
     );
@@ -137,16 +178,16 @@ export default function Admin() {
       </div>
 
       <div className="stat-grid">
-        <StatCard index={0} icon={Users} tone="brand" label="Total Employees" value={stats.totalEmployees} foot="Active team members" />
-        <StatCard index={1} icon={UserCheck} tone="ok" label="Present Today" value={stats.presentToday} foot="Checked in today" />
-        <StatCard index={2} icon={Hourglass} tone="warn" label="Pending Leaves" value={stats.pendingLeaves} foot="Awaiting your review" />
-        <StatCard index={3} icon={CheckCircle2} tone="info" label="Approved Leaves" value={stats.approvedLeaves} foot="This period" />
+        <StatCard index={0} icon={Users} tone="brand" label={t('admin.stat.totalEmployees')} value={stats.totalEmployees} foot={t('admin.foot.activeMembers')} />
+        <StatCard index={1} icon={UserCheck} tone="ok" label={t('admin.stat.presentToday')} value={stats.presentToday} foot={t('admin.foot.checkedInToday')} />
+        <StatCard index={2} icon={Hourglass} tone="warn" label={t('admin.stat.pendingLeaves')} value={stats.pendingLeaves} foot={t('admin.foot.awaitingReview')} />
+        <StatCard index={3} icon={CheckCircle2} tone="info" label={t('admin.stat.approvedLeaves')} value={stats.approvedLeaves} foot={t('admin.foot.thisPeriod')} />
       </div>
 
       <div className="grid-2">
-        <Card index={0} title="Leave Requests by Status" icon={PieIcon}>
+        <Card index={0} title={t('admin.card.leaveByStatus')} icon={PieIcon}>
           {leaveChart.length === 0 ? (
-            <EmptyState icon={PieIcon} title="No leave data yet" />
+            <EmptyState icon={PieIcon} title={t('admin.empty.leaveData')} />
           ) : (
             <>
               <div className="chart-box">
@@ -163,7 +204,7 @@ export default function Admin() {
                 {leaveChart.map((e) => (
                   <span className="lg" key={e.name}>
                     <span className="dot" style={{ background: COLORS[e.name] || '#6366f1' }} />
-                    <span style={{ textTransform: 'capitalize' }}>{e.name}</span> · {e.value}
+                    {t(`status.${e.name}`)} · {e.value}
                   </span>
                 ))}
               </div>
@@ -171,15 +212,15 @@ export default function Admin() {
           )}
         </Card>
 
-        <Card index={1} title="Attendance Overview" icon={BarChart3}>
+        <Card index={1} title={t('admin.card.attendanceOverview')} icon={BarChart3}>
           {attChart.every((d) => d.value === 0) ? (
-            <EmptyState icon={BarChart3} title="No attendance data yet" />
+            <EmptyState icon={BarChart3} title={t('admin.empty.attData')} />
           ) : (
             <div className="chart-box">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={attChart} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: 'var(--muted)', textTransform: 'capitalize' }} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="name" tickFormatter={(v) => t(`status.${v}`)} tick={{ fontSize: 12, fill: 'var(--muted)' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 12, fill: 'var(--muted)' }} axisLine={false} tickLine={false} width={40} allowDecimals={false} />
                   <Tooltip content={<ChartTip />} cursor={{ fill: 'var(--surface-2)' }} />
                   <Bar dataKey="value" radius={[8, 8, 0, 0]} maxBarSize={72}>
@@ -192,123 +233,42 @@ export default function Admin() {
         </Card>
       </div>
 
-      <div style={{ marginTop: 22 }}>
-        <div className="tabs">
-          {TABS.map((t) => (
-            <button key={t.key} className={`tab ${tab === t.key ? 'active' : ''}`} onClick={() => setTab(t.key)}>
-              {tab === t.key && <motion.span layoutId="admin-tab" className="tab-pill" transition={{ type: 'spring', stiffness: 400, damping: 32 }} />}
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}><t.icon size={15} /> {t.label}</span>
+      <div className="mt-section">
+        <div className="tabs" role="tablist">
+          {TABS.map((tb) => (
+            <button key={tb.key} role="tab" aria-selected={tab === tb.key} className={`tab ${tab === tb.key ? 'active' : ''}`} onClick={() => { setTab(tb.key); setSearch(''); }}>
+              {tab === tb.key && <motion.span layoutId="admin-tab" className="tab-pill" transition={springSoft} />}
+              <span className="tab-inner"><tb.icon size={15} /> {tb.label}</span>
             </button>
           ))}
         </div>
 
         <Card>
-          <div className="toolbar">
-            <div className="field">
-              <Search size={17} className="field-ico" />
-              <input placeholder={`Search ${tab}…`} value={search} onChange={(e) => setSearch(e.target.value)} />
-            </div>
-            {tab === 'employees' && (
-              <button className="btn btn-ghost" onClick={exportEmployees}><Download size={16} /> {t('btn.export')}</button>
-            )}
-            {tab === 'attendance' && (
-              <button className="btn btn-ghost" onClick={exportAttendance}><Download size={16} /> {t('btn.export')}</button>
-            )}
-          </div>
-
           {tab === 'leaves' && (
-            fLeaves.length === 0 ? <EmptyState icon={ClipboardList} title="No leave requests" /> :
-            <div className="table-wrap">
-              <table className="table">
-                <thead><tr><th>Employee</th><th>Type</th><th>Dates</th><th>Reason</th><th>Status</th><th></th></tr></thead>
-                <tbody>
-                  {fLeaves.map((l) => (
-                    <tr key={l.id}>
-                      <td>
-                        <div className="cell-user">
-                          <div className="avatar">{initials(l.user.name)}</div>
-                          <div>
-                            <div style={{ fontWeight: 600 }}>{l.user.name}</div>
-                            <div className="muted small">{l.user.department || '—'}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td style={{ textTransform: 'capitalize' }}>{l.type}</td>
-                      <td className="small mono">{fmtDate(l.startDate)}<br />→ {fmtDate(l.endDate)}</td>
-                      <td className="small" style={{ maxWidth: 240 }}>{l.reason}</td>
-                      <td><Pill status={l.status} /></td>
-                      <td>
-                        {l.status === 'pending' && (
-                          <div className="row-actions">
-                            <button className="btn btn-success btn-sm" onClick={() => setReview({ open: true, leave: l, status: 'approved', note: '' })}>
-                              <Check size={15} /> {t('btn.approve')}
-                            </button>
-                            <button className="btn btn-danger btn-sm" onClick={() => setReview({ open: true, leave: l, status: 'rejected', note: '' })}>
-                              <X size={15} /> {t('btn.reject')}
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              columns={leaveCols} rows={fLeaves} rowKey={(r) => r.id}
+              search={search} onSearch={setSearch}
+              emptyIcon={ClipboardList} emptyTitle={t('admin.empty.leaves')}
+              initialSort={{ key: 'status', dir: 'asc' }}
+            />
           )}
-
           {tab === 'attendance' && (
-            fAtt.length === 0 ? <EmptyState icon={CalendarDays} title="No attendance records" /> :
-            <div className="table-wrap">
-              <table className="table">
-                <thead><tr><th>Employee</th><th>Date</th><th>Check-in</th><th>Check-out</th><th>Hours</th><th>Status</th></tr></thead>
-                <tbody>
-                  {fAtt.map((a) => (
-                    <tr key={a.id}>
-                      <td>
-                        <div className="cell-user">
-                          <div className="avatar">{initials(a.user.name)}</div>
-                          <div>
-                            <div style={{ fontWeight: 600 }}>{a.user.name}</div>
-                            <div className="muted small">{a.user.department || '—'}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="mono">{a.date}</td>
-                      <td className="mono">{fmtTime(a.checkIn)}</td>
-                      <td className="mono">{fmtTime(a.checkOut)}</td>
-                      <td className="mono">{a.hoursWorked || 0}h</td>
-                      <td><Pill status={a.status} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              columns={attCols} rows={fAtt} rowKey={(r) => r.id}
+              search={search} onSearch={setSearch}
+              actions={<button className="chip-filter" onClick={exportAttendance}>{t('btn.export')}</button>}
+              emptyIcon={CalendarDays} emptyTitle={t('admin.empty.attendance')}
+              initialSort={{ key: 'date', dir: 'desc' }}
+            />
           )}
-
           {tab === 'employees' && (
-            fEmp.length === 0 ? <EmptyState icon={Users} title="No employees" /> :
-            <div className="table-wrap">
-              <table className="table">
-                <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Department</th><th>Position</th><th>Joined</th></tr></thead>
-                <tbody>
-                  {fEmp.map((u) => (
-                    <tr key={u.id}>
-                      <td>
-                        <div className="cell-user">
-                          <div className="avatar">{initials(u.name)}</div>
-                          <span style={{ fontWeight: 600 }}>{u.name}</span>
-                        </div>
-                      </td>
-                      <td className="small">{u.email}</td>
-                      <td><Pill status={u.role} /></td>
-                      <td>{u.department || '—'}</td>
-                      <td>{u.position || '—'}</td>
-                      <td className="mono small">{fmtDate(u.createdAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              columns={empCols} rows={fEmp} rowKey={(r) => r.id}
+              search={search} onSearch={setSearch}
+              actions={<button className="chip-filter" onClick={exportEmployees}>{t('btn.export')}</button>}
+              emptyIcon={Users} emptyTitle={t('admin.empty.employees')}
+              initialSort={{ key: 'name', dir: 'asc' }}
+            />
           )}
         </Card>
       </div>
@@ -316,25 +276,19 @@ export default function Admin() {
       <Modal
         open={review.open}
         onClose={() => setReview({ ...review, open: false })}
-        title={review.status === 'approved' ? 'Approve leave request' : 'Reject leave request'}
-        subtitle={review.leave ? `${review.leave.user.name} · ${review.leave.type} leave` : ''}
+        title={review.status === 'approved' ? t('admin.modal.approveTitle') : t('admin.modal.rejectTitle')}
+        subtitle={review.leave ? `${review.leave.user.name} · ${t(`leave.type.${review.leave.type}`)}` : ''}
         footer={
           <>
-            <button className="btn btn-ghost" onClick={() => setReview({ ...review, open: false })}>Cancel</button>
+            <button className="btn btn-ghost" onClick={() => setReview({ ...review, open: false })}>{t('common.cancel')}</button>
             <button className={`btn ${review.status === 'approved' ? 'btn-success' : 'btn-danger'}`} disabled={reviewing} onClick={submitReview}>
-              {reviewing ? 'Saving…' : review.status === 'approved' ? 'Confirm Approve' : 'Confirm Reject'}
+              {reviewing ? t('common.saving') : review.status === 'approved' ? t('admin.modal.confirmApprove') : t('admin.modal.confirmReject')}
             </button>
           </>
         }
       >
-        <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)' }}>Note (optional)</label>
-        <textarea
-          rows={3}
-          style={{ marginTop: 6 }}
-          placeholder="Add a note for the employee…"
-          value={review.note}
-          onChange={(e) => setReview({ ...review, note: e.target.value })}
-        />
+        <label htmlFor="review-note">{t('admin.modal.note')}</label>
+        <textarea id="review-note" rows={3} placeholder={t('admin.modal.notePlaceholder')} value={review.note} onChange={(e) => setReview({ ...review, note: e.target.value })} />
       </Modal>
     </PageTransition>
   );

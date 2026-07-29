@@ -17,12 +17,6 @@ const LOGIN = gql`
   }
 `;
 
-const FacebookIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
-    <path d="M13.5 22v-8h2.7l.4-3.13h-3.1V8.87c0-.9.25-1.52 1.55-1.52h1.65V4.56c-.28-.04-1.26-.12-2.4-.12-2.37 0-4 1.45-4 4.11v2.32H7.6V14h2.7v8h3.2z" />
-  </svg>
-);
-
 export default function Login() {
   const { t } = useLang();
   const [form, setForm] = useState({ email: '', password: '' });
@@ -76,33 +70,23 @@ export default function Login() {
           <p className="tl-sub">{t('login.sub')}</p>
         </section>
 
-        <form className="tl-form" onSubmit={submit}>
-          <div className="tl-col">
-            <input
-              className="tl-field" type="email" required autoComplete="email" aria-label={t('reg.email')}
-              placeholder={t('login.email')}
-              value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
-            />
-            <input
-              className="tl-field" type="password" required autoComplete="current-password" aria-label={t('login.passcode')}
-              placeholder={t('login.passcode')}
-              value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })}
-            />
-            <button className="tl-submit" type="submit" disabled={loading}>
-              {loading ? '…' : t('login.submit')} <ArrowRight size={20} />
-            </button>
-            <button className="tl-forgot" type="button" onClick={() => toast(t('toast.reset'))}>
-              {t('login.forgot')}
-            </button>
-          </div>
-
-          <div className="tl-divider" aria-hidden="true">/</div>
-
-          <div className="tl-col">
-            <button className="tl-social" type="button" onClick={() => toast(t('toast.sso'))}>
-              <span className="tl-social-ico"><FacebookIcon /></span> {t('login.facebook')}
-            </button>
-          </div>
+        <form className="tl-form-solo" onSubmit={submit}>
+          <input
+            className="tl-field" type="email" required autoComplete="email" aria-label={t('reg.email')}
+            placeholder={t('login.email')}
+            value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
+          <input
+            className="tl-field" type="password" required autoComplete="current-password" aria-label={t('login.passcode')}
+            placeholder={t('login.passcode')}
+            value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })}
+          />
+          <button className="tl-submit" type="submit" disabled={loading}>
+            {loading ? '…' : t('login.submit')} <ArrowRight size={20} />
+          </button>
+          <button className="tl-forgot" type="button" onClick={() => toast(t('toast.reset'))}>
+            {t('login.forgot')}
+          </button>
         </form>
 
         <footer className="tl-footer">

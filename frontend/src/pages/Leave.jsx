@@ -5,6 +5,7 @@ import { CalendarPlus, ListChecks, CalendarDays, Send, Hourglass, CheckCircle2, 
 import toast from 'react-hot-toast';
 import { fmtDate, daysBetween } from '../lib/format';
 import { useLang } from '../context/LanguageContext';
+import { useAppMotion } from '../lib/motion';
 import PageTransition from '../components/ui/PageTransition';
 import Card from '../components/ui/Card';
 import Pill from '../components/ui/Pill';
@@ -24,28 +25,25 @@ const REQUEST = gql`
   }
 `;
 
-const TYPES = [
-  { value: 'annual', label: 'Annual Leave' },
-  { value: 'sick', label: 'Sick Leave' },
-  { value: 'casual', label: 'Casual Leave' },
-  { value: 'unpaid', label: 'Unpaid Leave' },
-];
+const TYPES = ['annual', 'sick', 'casual', 'unpaid'];
 
 export default function Leave() {
   const { t } = useLang();
+  const m = useAppMotion();
   const [form, setForm] = useState({ type: 'annual', startDate: '', endDate: '', reason: '' });
   const { data, refetch, loading } = useQuery(MY_LEAVES);
   const [req, { loading: sending }] = useMutation(REQUEST);
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
   const duration = form.startDate && form.endDate ? daysBetween(form.startDate, form.endDate) : 0;
+  const dayLabel = (n) => `${n} ${n === 1 ? t('common.day') : t('common.days')}`;
 
   const submit = async (e) => {
     e.preventDefault();
-    if (new Date(form.endDate) < new Date(form.startDate)) return toast.error('End date must be after start date');
+    if (new Date(form.endDate) < new Date(form.startDate)) return toast.error(t('toast.leaveEndBeforeStart'));
     try {
       await req({ variables: form });
-      toast.success('Leave request submitted');
+      toast.success(t('toast.leaveSubmitted'));
       setForm({ type: 'annual', startDate: '', endDate: '', reason: '' });
       refetch();
     } catch (err) {
@@ -67,48 +65,42 @@ export default function Leave() {
           <h1>{t('page.leave.title')}</h1>
           <p className="sub">{t('page.leave.sub')}</p>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <span className="pill pill-pending"><Hourglass size={12} /> {counts.pending} Pending</span>
-          <span className="pill pill-approved"><CheckCircle2 size={12} /> {counts.approved} Approved</span>
-          <span className="pill pill-rejected"><XCircle size={12} /> {counts.rejected} Rejected</span>
+        <div className="leave-counts">
+          <span className="pill pill-pending"><Hourglass size={12} /> {counts.pending} {t('status.pending')}</span>
+          <span className="pill pill-approved"><CheckCircle2 size={12} /> {counts.approved} {t('status.approved')}</span>
+          <span className="pill pill-rejected"><XCircle size={12} /> {counts.rejected} {t('status.rejected')}</span>
         </div>
       </div>
 
       <div className="grid-2">
-        <Card index={0} title="New Leave Request" icon={CalendarPlus}>
+        <Card index={0} title={t('leave.card.new')} icon={CalendarPlus}>
           <form onSubmit={submit} className="form">
-            <label>Leave Type</label>
-            <select value={form.type} onChange={set('type')}>
-              {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            <label htmlFor="ltype">{t('leave.form.type')}</label>
+            <select id="ltype" value={form.type} onChange={set('type')}>
+              {TYPES.map((ty) => <option key={ty} value={ty}>{t(`leave.type.${ty}`)}</option>)}
             </select>
 
             <div className="row">
               <div>
-                <label>Start Date</label>
-                <input type="date" required value={form.startDate} onChange={set('startDate')} />
+                <label htmlFor="lstart">{t('leave.form.start')}</label>
+                <input id="lstart" type="date" required value={form.startDate} onChange={set('startDate')} />
               </div>
               <div>
-                <label>End Date</label>
-                <input type="date" required value={form.endDate} min={form.startDate || undefined} onChange={set('endDate')} />
+                <label htmlFor="lend">{t('leave.form.end')}</label>
+                <input id="lend" type="date" required value={form.endDate} min={form.startDate || undefined} onChange={set('endDate')} />
               </div>
             </div>
 
             <AnimatePresence>
               {duration > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="review-note"
-                  style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}
-                >
-                  <CalendarDays size={15} /> Duration: <b>{duration}</b> {duration === 1 ? 'day' : 'days'}
+                <motion.div className="leave-duration" {...m.fade()}>
+                  <CalendarDays size={15} /> {t('common.duration')}: <b>{dayLabel(duration)}</b>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <label>Reason</label>
-            <textarea rows={4} required placeholder="Briefly describe the reason for your leave…" value={form.reason} onChange={set('reason')} />
+            <label htmlFor="lreason">{t('leave.form.reason')}</label>
+            <textarea id="lreason" rows={4} required placeholder={t('leave.reasonPlaceholder')} value={form.reason} onChange={set('reason')} />
 
             <button className="btn btn-primary full btn-lg mt-4" disabled={sending}>
               <Send size={17} /> {sending ? '…' : t('btn.submitRequest')}
@@ -116,32 +108,26 @@ export default function Leave() {
           </form>
         </Card>
 
-        <Card index={1} title="Your Requests" icon={ListChecks}>
+        <Card index={1} title={t('leave.card.your')} icon={ListChecks}>
           {loading ? (
             <div className="loader"><div className="spinner" /></div>
           ) : leaves.length === 0 ? (
-            <EmptyState icon={CalendarDays} title="No requests yet" hint="Submit your first leave request on the left." />
+            <EmptyState icon={CalendarDays} title={t('leave.empty')} hint={t('leave.emptyHint')} />
           ) : (
             <div className="leave-list">
               {leaves.map((l, i) => (
-                <motion.div
-                  key={l.id}
-                  className="leave-item"
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
+                <motion.div key={l.id} className="leave-item" {...m.rise(i)}>
                   <div className="leave-row">
-                    <b style={{ textTransform: 'capitalize' }}>{l.type} leave</b>
+                    <b>{t(`leave.type.${l.type}`)}</b>
                     <Pill status={l.status} />
                   </div>
                   <div className="muted small">
-                    {fmtDate(l.startDate)} → {fmtDate(l.endDate)} · {daysBetween(l.startDate, l.endDate)} {daysBetween(l.startDate, l.endDate) === 1 ? 'day' : 'days'}
+                    {fmtDate(l.startDate)} → {fmtDate(l.endDate)} · {dayLabel(daysBetween(l.startDate, l.endDate))}
                   </div>
                   <div className="leave-reason">{l.reason}</div>
                   {l.reviewNote && (
                     <div className="review-note">
-                      <b>Note from {l.reviewedBy?.name || 'admin'}:</b> {l.reviewNote}
+                      <b>{t('common.noteFrom')} {l.reviewedBy?.name || t('status.admin')}:</b> {l.reviewNote}
                     </div>
                   )}
                 </motion.div>
