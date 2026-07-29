@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
+import CommandPalette from '../ui/CommandPalette';
 
 export default function AppLayout({ children }) {
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === '1');
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [cmdkOpen, setCmdkOpen] = useState(false);
 
   const toggleCollapse = () => {
     setCollapsed((c) => {
@@ -12,6 +14,18 @@ export default function AppLayout({ children }) {
       return !c;
     });
   };
+
+  // Global Cmd/Ctrl+K to open the command palette.
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCmdkOpen((o) => !o);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   return (
     <div className="shell">
@@ -23,9 +37,10 @@ export default function AppLayout({ children }) {
       />
       <div className={`scrim ${mobileOpen ? 'show' : ''}`} onClick={() => setMobileOpen(false)} />
       <div className={`main ${collapsed ? 'collapsed' : ''}`}>
-        <Topbar onOpenMobile={() => setMobileOpen(true)} />
+        <Topbar onOpenMobile={() => setMobileOpen(true)} onOpenCmdk={() => setCmdkOpen(true)} />
         {children}
       </div>
+      <CommandPalette open={cmdkOpen} onClose={() => setCmdkOpen(false)} />
     </div>
   );
 }
